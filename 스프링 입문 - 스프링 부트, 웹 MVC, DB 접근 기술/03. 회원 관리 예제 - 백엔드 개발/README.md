@@ -88,5 +88,102 @@ public class MemoryMemberRepositoryTest {
 ### 4. 회원 서비스 개발
   - 회원 리포지토리와 도메인을 활용해서 실제 비즈니스 로직을 작성
 
+#### MemberService.java
+  - 공통
+  ````java
+  private final MemberRepository memberRepository;
+  public MemberService(MemberRepository memberRepository) {
+      this.memberRepository = memberRepository;
+  }
+  ````
+  - 회원 가입
+  ````java
+  public Long join(Member member) {
+        // 같은 이름이 있는 중복 회원 X
+        validateDuplicateMember(member); // 중복 회원 검증
+        memberRepository.save(member);
+        return member.getId();
+    }
 
+    private void validateDuplicateMember(Member member) {
+        Optional<Member> result = memberRepository.findByName(member.getName());
+        result.ifPresent(m -> {
+            throw new IllegalStateException("이미 존재하는 회원입니다.");
+        });
+    }
+  ````
+  - 회원 조회
+  ````java
+  public Optional<Member> findOne(Long memberId) {
+        return memberRepository.findById(memberId);
+    }
+  ````
+  - 전체 회원 조회
+  ````java
+  public List<Member> findMembers() {
+        return memberRepository.findAll();
+    }
+  ````
 
+- - -
+
+### 5. 회원 서비스 테스트
+#### MemberServiceTest.java
+  - 공통
+  ````java
+  emberService memberService;
+      MemoryMemberRepository memberRepository;
+
+      @BeforeEach // 동작하기 전에 실행
+      public void beforeEach() {
+          memberRepository = new MemoryMemberRepository();
+          memberService = new MemberService(memberRepository);
+          // 같은 MemoryMemberRepository 사용
+      }
+
+      @AfterEach // 메서드 실행이 끝날 때마다 어떠한 동작을 하는 것
+      public void afterEach() {
+          memberRepository.clearStore(); // clear
+      }
+
+  ````
+  - 회원 가입 및 중복_회원_예외
+  ````java
+  @Test
+    void 회원가입() {
+        // given
+        Member member = new Member();
+        member.setName("hello");
+
+        // when
+        Long saveId = memberService.join(member);
+
+        // then
+        Member findMember = memberService.findOne(saveId).get();
+        Assertions.assertThat(member.getName()).isEqualTo(findMember.getName());
+    }
+
+    @Test
+    public void 중복_회원_예외() {
+        // given
+        Member member1 = new Member();
+        member1.setName("spring");
+
+        Member member2 = new Member();
+        member2.setName("spring");
+
+        // when
+        memberService.join(member1);
+        // 방법 1
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> memberService.join(member2));
+        Assertions.assertThat(e.getMessage()).isEqualTo("이미 존재하는 회원입니다.");
+        // 방법 2
+        try {
+            memberService.join(member2);
+            fail();
+        } catch (IllegalStateException e) {
+            Assertions.assertThat(e.getMessage()).isEqualTo("이미 존재하는 회원입니다.");
+        }
+    }
+  
+  ````
