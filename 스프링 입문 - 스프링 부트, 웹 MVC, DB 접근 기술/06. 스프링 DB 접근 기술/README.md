@@ -263,3 +263,84 @@ DataSource
 |:--------:|:--------:|:--------:|
 | ![회원가입](https://user-images.githubusercontent.com/54324782/178228372-3d5b1022-d227-4381-969d-fe5d1c0b7180.png)| ![회원 목록](https://user-images.githubusercontent.com/54324782/178228433-bb941f99-be7a-4f09-8e10-e7b2aec30cbc.png) | ![DB](https://user-images.githubusercontent.com/54324782/178228494-dd9e5ac1-1a8e-4667-986f-c99d472f4d5a.png)
 
+- - -
+### 3. 스프링 통합 테스트
+#### 3.1. "회원 서비스 스프링 통합 테스트"
+  - `@SpringBootTest` : 스프링 컨테이너와 테스트를 함께 실행한다.
+  - `@Transactional` : 테스트 케이스에 이 어노테이션이 있으면, 테스트 시작 전에 트랜잭션을 시작하고, 테스트 완료 후에 항상 롤백한다.
+     이렇게 하면 DB에 데이터가 남지 않으므로 다음 테스트에 영향을 주지 않는다.
+     
+- - -
+### 4. 스프링 JdbcTemplate
+  - 순수 Jdbc와 동일한 환경설정을 하면 된다.
+  - 스프링 JdbcTemplate과 MyBatis같은 라이브러리는 JDBC API에서 본 반복 코드를 대부분 제거해준다. 하지만 SQL은 직접 작성해야 한다.
+  
+#### 4.1. "스프링 JdbcTemplate 회원 리포지토리"
+#### JdbcTemplateMemberRepository.java
+````java
+public class JdbcTemplateMemberRepository implements MemberRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public JdbcTemplateMemberRepository(DataSource dataSource) {
+        jdbcTemplate = new JdbcTemplate(dataSource);
+    }
+
+    @Override
+    public Member save(Member member) {
+        SimpleJdbcInsert jdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
+        jdbcInsert.withTableName("member").usingGeneratedKeyColumns("id");
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("name", member.getName());
+
+        Number key = jdbcInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
+        member.setId(key.longValue());
+        return member;
+    }
+
+    @Override
+    public Optional<Member> findById(Long id) {
+        List<Member> result = jdbcTemplate.query("select * from member where id = ?", memberRowMapper(), id);
+        return result.stream().findAny();
+    }
+
+    @Override
+    public Optional<Member> findByName(String name) {
+        List<Member> result = jdbcTemplate.query("select * from member where name = ?", memberRowMapper(), name);
+        return result.stream().findAny();
+    }
+
+    @Override
+    public List<Member> findAll() {
+        return jdbcTemplate.query("select * from member", memberRowMapper());
+    }
+
+    private RowMapper<Member> memberRowMapper() {
+        return (rs, rowNum) -> {
+            Member member = new Member();
+            member.setId(rs.getLong("id"));
+            member.setName(rs.getString("name"));
+            return member;
+        };
+    }
+}
+
+````
+#### SpringConfig.java
+````java
+@Bean
+public MemberRepository memberRepository() {
+  //return new MemoryMemberRepository(); // 구현체
+  //return new JdbcMemberRepository(dataSource);
+  return new JdbcTemplateMemberRepository(dataSource);
+}
+````
+
+- - -
+### 5. JPA
+  - JPA는 기존의 반복 코드는 물론이고, 기본적인 SQL도 JPA가 직접 만들어서 실행해준다.
+  - JPA를 사용하면 SQL과 데이터 중심의 설계에서 객체 중심의 설계로 패러다임을 전환할 수 있다.
+  - JPA를 사용하면 개발 생산성을 크게 높일 수 있다.
+#### 5.1. "build.gradle 파일에 JPA, h2 데이터베이스 관련 라이브러리 추가"
