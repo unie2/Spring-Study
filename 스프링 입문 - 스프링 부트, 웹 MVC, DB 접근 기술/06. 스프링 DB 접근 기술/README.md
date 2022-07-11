@@ -40,6 +40,7 @@ spring.datasource.driver-class-name=org.h2.Driver
 spring.datasource.username=sa
 
 ````
+#### 2.2. 
 #### repository/JdbcMemberRepository
   - 공통
   ````java
@@ -257,7 +258,7 @@ DataSource
 - 스프링의 DI(Dependencies Injection)을 사용하면 `기존 코드를 전혀 손대지 않고, 설정만으로 구현 클래스를 변경`할 수 있다.
 
 
-#### "테스트 실행"
+#### 2.3. "테스트 실행"
 | 회원 가입 | 회원 목록 | DB | 
 |:--------:|:--------:|:--------:|
 | ![회원가입](https://user-images.githubusercontent.com/54324782/178228372-3d5b1022-d227-4381-969d-fe5d1c0b7180.png)| ![회원 목록](https://user-images.githubusercontent.com/54324782/178228433-bb941f99-be7a-4f09-8e10-e7b2aec30cbc.png) | ![DB](https://user-images.githubusercontent.com/54324782/178228494-dd9e5ac1-1a8e-4667-986f-c99d472f4d5a.png)
