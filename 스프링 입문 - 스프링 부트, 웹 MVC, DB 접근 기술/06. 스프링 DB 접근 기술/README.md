@@ -37,6 +37,7 @@ runtimeOnly 'com.h2database:h2'
 // application.properties
 spring.datasource.url=jdbc:h2:tcp://localhost/~/test
 spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
 
 ````
 #### repository/JdbcMemberRepository
@@ -223,3 +224,41 @@ spring.datasource.driver-class-name=org.h2.Driver
   }
   
   ````
+#### SpringConfig.java
+````java
+@Configuration
+public class SpringConfig {
+  private DataSource dataSource;
+  @Autowired
+  public SpringConfig(DataSource dataSource) {
+    this.dataSource = dataSource;
+  }
+  .
+  .
+  .
+  @Bean
+  public MemberRepository memberRepository() {
+    //return new MemoryMemberRepository();
+    return new JdbcMemberRepository(dataSource);
+  }
+}
+
+````
+```
+DataSource
+  - 데이터베이스 커넥션을 획득할 때 사용하는 객체
+  - 스프링 부트는 데이터베이스 커넥션 정보를 바탕으로 DataSource를 생성하고 스프링 빈으로 만들어둔다. 그래서 DI를 받을 수 있다.
+```
+| 구현 클래스 추가 이미지 | 스프링 설정 이미지 |
+|:--------:|:--------:|
+|![구현클래스](https://user-images.githubusercontent.com/54324782/178229194-ff3bf738-dbf2-48a7-9cde-7072fcd2b00c.png) | ![스프링설정](https://user-images.githubusercontent.com/54324782/178229839-7dbe5bcb-e3ee-4a71-ba39-8db311b27fe3.png)
+| MemberService는 MemberRepository를 의존하고 있으며, MemberRepository는 구현체로 MemoryMemberRepository와 JdbcMemberRepository가 있다. | 기존에 등록된 MemoryMemberRepository를 빼고 JdbcMemberRepository를 등록
+- 개방-폐쇠 원칙(OCP: Open-Closed Principle) : 확장에는 열려있고, 수정에는 닫혀있다.
+- 스프링의 DI(Dependencies Injection)을 사용하면 `기존 코드를 전혀 손대지 않고, 설정만으로 구현 클래스를 변경`할 수 있다.
+
+
+#### "테스트 실행"
+| 회원 가입 | 회원 목록 | DB | 
+|:--------:|:--------:|:--------:|
+| ![회원가입](https://user-images.githubusercontent.com/54324782/178228372-3d5b1022-d227-4381-969d-fe5d1c0b7180.png)| ![회원 목록](https://user-images.githubusercontent.com/54324782/178228433-bb941f99-be7a-4f09-8e10-e7b2aec30cbc.png) | ![DB](https://user-images.githubusercontent.com/54324782/178228494-dd9e5ac1-1a8e-4667-986f-c99d472f4d5a.png)
+
